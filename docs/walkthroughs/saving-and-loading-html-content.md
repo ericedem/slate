@@ -28,7 +28,7 @@ class App extends React.Component {
 
 That will render a basic Slate editor on your page.
 
-Now... we need to add the [`Html`](../reference/serializers/html.md) serializer. And to do that, we need to tell it a bit about the schema we plan on using. For this example, we'll work with a schema that has a few different parts:
+Now... we need to add the [`Html`](../reference/slate-html-serializer/index.md) serializer. And to do that, we need to tell it a bit about the schema we plan on using. For this example, we'll work with a schema that has a few different parts:
 
 * A `paragraph` block.
 * A `code` block for code samples.
@@ -90,7 +90,7 @@ const rules = [
 
 The `serialize` function should also feel familiar. It's just taking [Slate models](../reference/slate) and turning them into React elements, which will then be rendered to an HTML string.
 
-The `object` argument of the `serialize` function will either be a [`Node`](../reference/slate/node.md), a [`Mark`](../reference/slate/mark.md) or a special immutable [`String`](../reference/serializers/html.md#ruleserialize) object. And the `children` argument is a React element describing the nested children of the object in question, for recursing.
+The `object` argument of the `serialize` function will either be a [`Node`](../reference/slate/node.md), a [`Mark`](../reference/slate/mark.md) or a special immutable [`String`](../reference/slate-html-serializer/index.md#ruleserialize) object. And the `children` argument is a React element describing the nested children of the object in question, for recursing.
 
 Okay, so now our serializer can handle `paragraph` nodes.
 
