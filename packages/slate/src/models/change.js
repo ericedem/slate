@@ -15,6 +15,8 @@ import PathUtils from '../utils/path-utils'
 
 const debug = Debug('slate:change')
 
+const KEY_SYMBOL = Symbol('key')
+
 /**
  * Change.
  *
@@ -171,8 +173,14 @@ class Change {
     keys.forEach(key => {
       const path = table[key]
       if (!path) return
-      if (!path.length) return
-      if (!map.hasIn(path)) map = map.setIn(path, Map())
+
+      if (!path.length) {
+        map = map.set(KEY_SYMBOL, key)
+
+        return
+      }
+
+      if (!map.hasIn(path)) map = map.setIn(path, Map({ [KEY_SYMBOL]: key }))
     })
 
     // To avoid infinite loops, we need to defer normalization until the end.
@@ -194,11 +202,12 @@ class Change {
 
   normalizeMapAndPath(map, path = []) {
     map.forEach((m, k) => {
+      if (k === KEY_SYMBOL) return
       const p = [...path, k]
       this.normalizeMapAndPath(m, p)
     })
 
-    this.normalizePath(path)
+    this.normalizePath(path, map[KEY_SYMBOL])
     return this
   }
 
@@ -207,13 +216,44 @@ class Change {
    * necessary until it satisfies all of the schema rules.
    *
    * @param {Array} path
+   * @param {String} key
    * @return {Change}
    */
 
-  normalizePath(path) {
+  normalizePath(path, key) {
     const { value } = this
     let { document, schema } = value
-    let node = document.assertNode(path)
+    let node
+
+    const refindNode = () => {
+      let found = document.getDescendant(path)
+
+      if (found && found.key === key) {
+        node = found
+      } else {
+        found = document.getDescendant(key)
+
+        if (found) {
+          node = found
+          path = document.getPath(key)
+        } else {
+          // If it no longer exists by key, it was removed, so abort.
+          node = null
+        }
+      }
+    }
+
+    try {
+      node = document.assertNode(path)
+    } catch (err) {
+      // If we can't find the node by path then it may have moved do to another
+      // node's normalization. We will try to find it again.
+      refindNode()
+
+      if (!node) {
+        return this
+      }
+    }
 
     let iterations = 0
     const max =
@@ -231,22 +271,11 @@ class Change {
       // Attempt to re-find the node by path, or by key if it has changed
       // locations in the tree continue iterating.
       document = this.value.document
-      const { key } = node
-      let found = document.getDescendant(path)
+      key = node.key
 
-      if (found && found.key === key) {
-        node = found
-      } else {
-        found = document.getDescendant(key)
+      refindNode()
 
-        if (found) {
-          node = found
-          path = document.getPath(key)
-        } else {
-          // If it no longer exists by key, it was removed, so abort.
-          return
-        }
-      }
+      if (!node) return
 
       // Increment the iterations counter, and check to make sure that we haven't
       // exceeded the max. Without this check, it's easy for the `normalize`
