@@ -123,6 +123,17 @@ class Decoration extends Record(DEFAULTS) {
     return decoration
   }
 
+  normalize(node) {
+    this.anchor.normalize(node)
+    this.focus.normalize(node)
+
+    return this.merge({
+      anchor: this.anchor.normalize(node),
+      focus: this.focus.normalize(node),
+      mark: this.mark.normalize(node),
+    })
+  }
+
   /**
    * Set new `properties` on the decoration.
    *

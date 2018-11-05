@@ -450,7 +450,8 @@ class ElementInterface {
 
     const array = editor.run('decorateNode', this)
     const decorations = Decoration.createList(array)
-    return decorations
+
+    return decorations.map(dec => dec.normalize(this))
   }
 
   /**
